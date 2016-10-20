@@ -72,8 +72,8 @@
       <file src="..\src\PCLStorage.Abstractions.NoSL\bin\Release\PCLStorage.Abstractions.dll" target="lib\monoandroid\PCLStorage.Abstractions.dll" />
       <file src="..\src\PCLStorage.Abstractions.NoSL\bin\Release\PCLStorage.Abstractions.xml" target="lib\monoandroid\PCLStorage.Abstractions.xml" />
 
-      <file src="..\src\PCLStorage.iOS\bin\iPhone\Release\PCLStorage.dll" target="lib\monotouch\PCLStorage.dll" />
-      <file src="..\src\PCLStorage.iOS\bin\iPhone\Release\PCLStorage.xml" target="lib\monotouch\PCLStorage.xml" />
+      <file src="..\src\PCLStorage.iOS-Unified\bin\iPhone\Release\PCLStorage.xml" target="lib\monotouch\PCLStorage.xml" />
+      <file src="..\src\PCLStorage.iOS-Unified\bin\iPhone\Release\PCLStorage.dll" target="lib\monotouch\PCLStorage.dll" />
       <file src="..\src\PCLStorage.Abstractions.NoSL\bin\Release\PCLStorage.Abstractions.dll" target="lib\monotouch\PCLStorage.Abstractions.dll" />
       <file src="..\src\PCLStorage.Abstractions.NoSL\bin\Release\PCLStorage.Abstractions.xml" target="lib\monotouch\PCLStorage.Abstractions.xml" />
       
