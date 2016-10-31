@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace PCLStorage
 {
@@ -33,16 +35,8 @@ namespace PCLStorage
     /// <summary>
     /// Represents a file system folder
     /// </summary>
-    public interface IFolder
+    public interface IFolder: IFileSystemItem
     {
-        /// <summary>
-        /// The name of the folder
-        /// </summary>
-        string Name { get; }
-        /// <summary>
-        /// The "full path" of the folder, which should uniquely identify it within a given <see cref="IFileSystem"/>
-        /// </summary>
-        string Path { get; }
 
         /// <summary>
         /// Creates a file in this folder
@@ -101,10 +95,18 @@ namespace PCLStorage
         Task<ExistenceCheckResult> CheckExistsAsync(string name, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Deletes this folder and all of its contents
+        /// Opens the file
         /// </summary>
+        /// <param name="FilePath">Specifies file path.</param>
+        /// <param name="fileAccess">Specifies whether the file should be opened in read-only or read/write mode</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task which will complete after the folder is deleted</returns>
-        Task DeleteAsync(CancellationToken cancellationToken = default(CancellationToken));
+        /// <returns>A <see cref="Stream"/> which can be used to read from or write to the file</returns>
+        Task<Stream> OpenFileAsync(string FilePath, FileAccess fileAccess, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets all folder's items.
+        /// </summary>
+        /// <returns>A <see cref="IList"/> which contains all folders items (folder and files)</returns>
+        Task<IList<IFileSystemItem>> GetItemsAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

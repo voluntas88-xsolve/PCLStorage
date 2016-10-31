@@ -456,7 +456,7 @@ namespace PCLStorage.Test
 
             //	Act
             string movedFile = "movedFile.txt";
-            await file.MoveAsync(PortablePath.Combine(folder.Path, movedFile));
+            await file.MoveAsync(folder.Path, movedFile);
 
             //	Assert
             Assert.AreEqual(movedFile, file.Name);
@@ -480,7 +480,7 @@ namespace PCLStorage.Test
 
             //	Act
             string movedFile = "movedFile.txt";
-            await file.MoveAsync(PortablePath.Combine(subfolder.Path, movedFile));
+            await file.MoveAsync(subfolder.Path, movedFile);
 
             //	Assert
             Assert.AreEqual(movedFile, file.Name);
@@ -507,7 +507,7 @@ namespace PCLStorage.Test
             IFile existingFile = await folder.CreateFileAsync(movedFile, CreationCollisionOption.FailIfExists);
 
             //	Act & Assert
-            await ExceptionAssert.ThrowsAsync<IOException>(async () => await file.MoveAsync(PortablePath.Combine(folder.Path, movedFile), NameCollisionOption.FailIfExists));
+            await ExceptionAssert.ThrowsAsync<IOException>(async () => await file.MoveAsync(folder.Path, movedFile, NameCollisionOption.FailIfExists));
             Assert.AreEqual(originalFileName, file.Name);
 
             var files = await folder.GetFilesAsync();
@@ -530,7 +530,7 @@ namespace PCLStorage.Test
             IFile file2 = await folder.CreateFileAsync(fileName2, CreationCollisionOption.FailIfExists);
 
             //	Act
-            await file1.MoveAsync(PortablePath.Combine(folder.Path, fileName2), NameCollisionOption.GenerateUniqueName);
+            await file1.MoveAsync(folder.Path, fileName2, NameCollisionOption.GenerateUniqueName);
 
             // Assert
             string file1NameWithoutExtension = file1.Name.Substring(0, file1.Name.IndexOf('.'));
@@ -558,7 +558,7 @@ namespace PCLStorage.Test
             IFile existingFile = await folder.CreateFileAsync(movedFile, CreationCollisionOption.FailIfExists);
 
             //	Act & Assert
-            await file.MoveAsync(PortablePath.Combine(folder.Path, movedFile), NameCollisionOption.ReplaceExisting);
+            await file.MoveAsync(folder.Path, movedFile, NameCollisionOption.ReplaceExisting);
             Assert.AreEqual(movedFile, file.Name);
 
             var files = await folder.GetFilesAsync();
@@ -583,6 +583,166 @@ namespace PCLStorage.Test
             Assert.IsTrue(result.Exception.InnerException is ArgumentException);
 
             result = file.MoveAsync(null);
+            Assert.IsTrue(result.IsFaulted);
+            Assert.AreEqual(typeof(ArgumentNullException), result.Exception.InnerException.GetType());
+
+            // Cleanup
+            await file.DeleteAsync();
+        }
+
+
+        [TestMethod]
+        public async Task CopyFile_WithinDirectory()
+        {
+            //	Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string originalFileName = "fileToCopy.txt";
+            IFile file = await folder.CreateFileAsync(originalFileName, CreationCollisionOption.FailIfExists);
+
+            //	Act
+            string copiedFile = "copiedFile.txt";
+            await file.CopyAsync(folder.Path, copiedFile);
+
+            //	Assert
+            Assert.AreEqual(copiedFile, file.Name);
+            Assert.AreEqual(PortablePath.Combine(TestFileSystem.LocalStorage.Path, file.Name), file.Path);
+            var files = await folder.GetFilesAsync();
+            Assert.IsTrue(files.Any(f => f.Name == originalFileName));
+            Assert.IsTrue(files.Any(f => f.Name == copiedFile));
+
+            // Cleanup
+            foreach (var f in files)
+            {
+                await f.DeleteAsync();
+            }
+
+        }
+
+        [TestMethod]
+        public async Task CopyFile_AcrossDirectories()
+        {
+            //	Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string originalFileName = "fileToCopy.txt";
+            IFile file = await folder.CreateFileAsync(originalFileName, CreationCollisionOption.FailIfExists);
+            var subfolder = await folder.CreateFolderAsync("subfolder", CreationCollisionOption.FailIfExists);
+
+            //	Act
+            string copiedFile = "copiedFile.txt";
+            await file.CopyAsync(subfolder.Path, copiedFile);
+
+            //	Assert
+            Assert.AreEqual(copiedFile, file.Name);
+            Assert.AreEqual(PortablePath.Combine(subfolder.Path, file.Name), file.Path);
+            var files = await folder.GetFilesAsync();
+            Assert.IsTrue(files.Any(f => f.Name == originalFileName));
+            Assert.IsFalse(files.Any(f => f.Name == copiedFile));
+            var filesSubfolder = await subfolder.GetFilesAsync();
+            Assert.IsFalse(filesSubfolder.Any(f => f.Name == originalFileName));
+            Assert.IsTrue(filesSubfolder.Any(f => f.Name == copiedFile));
+
+            // Cleanup
+            foreach (var f in files)
+            {
+                await f.DeleteAsync();
+            }
+            await subfolder.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task CopyFile_FailIfExists()
+        {
+            //	Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string originalFileName = "fileToCopy.txt";
+            string copiedFile = "copiedFile.txt";
+            IFile file = await folder.CreateFileAsync(originalFileName, CreationCollisionOption.FailIfExists);
+            IFile existingFile = await folder.CreateFileAsync(copiedFile, CreationCollisionOption.FailIfExists);
+
+            //	Act & Assert
+            await ExceptionAssert.ThrowsAsync<IOException>(async () => await file.CopyAsync(folder.Path, copiedFile, NameCollisionOption.FailIfExists));
+            Assert.AreEqual(originalFileName, file.Name);
+
+            var files = await folder.GetFilesAsync();
+            Assert.IsTrue(files.Any(f => f.Name == copiedFile));
+            Assert.IsTrue(files.Any(f => f.Name == originalFileName));
+
+            // Cleanup
+            await file.DeleteAsync();
+            await existingFile.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task CopyFile_GenerateUniqueName()
+        {
+            //	Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string fileName1 = "file1.txt";
+            string fileName2 = "file2.txt";
+            IFile file1 = await folder.CreateFileAsync(fileName1, CreationCollisionOption.FailIfExists);
+            IFile file2 = await folder.CreateFileAsync(fileName2, CreationCollisionOption.FailIfExists);
+
+            //	Act
+            await file1.CopyAsync(folder.Path, fileName2, NameCollisionOption.GenerateUniqueName);
+
+            // Assert
+            string file1NameWithoutExtension = file1.Name.Substring(0, file1.Name.IndexOf('.'));
+            string fileName2WithoutExtension = fileName2.Substring(0, fileName2.IndexOf('.'));
+            Assert.IsTrue(file1NameWithoutExtension.StartsWith(fileName2WithoutExtension));
+            Assert.IsFalse(file1NameWithoutExtension.Equals(fileName2WithoutExtension));
+            var files = await folder.GetFilesAsync();
+            Assert.IsTrue(files.Any(f => f.Name == fileName1));
+            Assert.IsTrue(files.Any(f => f.Name == fileName2));
+            Assert.IsTrue(files.Any(f => f.Name == file1.Name));
+
+            Assert.IsFalse(file1.Name == fileName1);
+
+            // Cleanup
+            foreach (var f in files)
+            {
+                await f.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task CopyFile_ReplaceExisting()
+        {
+            //	Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string originalFileName = "fileToCopy.txt";
+            string copiedFile = "copiedFile.txt";
+            IFile file = await folder.CreateFileAsync(originalFileName, CreationCollisionOption.FailIfExists);
+            IFile existingFile = await folder.CreateFileAsync(copiedFile, CreationCollisionOption.FailIfExists);
+
+            //	Act & Assert
+            await file.CopyAsync(folder.Path, copiedFile, NameCollisionOption.ReplaceExisting);
+            Assert.AreEqual(copiedFile, file.Name);
+
+            var files = await folder.GetFilesAsync();
+            Assert.IsTrue(files.Any(f => f.Name == copiedFile));
+            Assert.IsTrue(files.Any(f => f.Name == originalFileName));
+
+            // Cleanup
+            foreach (var f in files)
+            {
+                await f.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task CopyFile_BadArgs()
+        {
+            // Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string originalFileName = "someFile.txt";
+            IFile file = await folder.CreateFileAsync(originalFileName, CreationCollisionOption.FailIfExists);
+
+            // Act & assert
+            Task result = file.CopyAsync(string.Empty);
+            Assert.IsTrue(result.IsFaulted);
+            Assert.IsTrue(result.Exception.InnerException is ArgumentException);
+
+            result = file.CopyAsync(null);
             Assert.IsTrue(result.IsFaulted);
             Assert.AreEqual(typeof(ArgumentNullException), result.Exception.InnerException.GetType());
 

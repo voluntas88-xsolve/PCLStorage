@@ -49,6 +49,11 @@ namespace PCLStorage
             }
         }
 
+        public Task<IFile> GetFileFromAppBundleAsync(string path, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets a file, given its path.  Returns null if the file does not exist.
         /// </summary>

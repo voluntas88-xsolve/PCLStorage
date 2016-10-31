@@ -58,6 +58,9 @@
     <Compile Include="..\PCLStorage.Abstractions\IFileSystem.cs">
       <Link>IFileSystem.cs</Link>
     </Compile>
+    <Compile Include="..\PCLStorage.Abstractions\IFileSystemItem.cs">
+      <Link>IFileSystemItem.cs</Link>
+    </Compile>
     <Compile Include="..\PCLStorage.Abstractions\IFolder.cs">
       <Link>IFolder.cs</Link>
     </Compile>

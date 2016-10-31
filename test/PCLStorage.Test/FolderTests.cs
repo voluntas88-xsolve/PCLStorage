@@ -494,5 +494,123 @@ namespace PCLStorage.Test
             //  Act & Assert
             await ExceptionAssert.ThrowsAsync<IOException>(async () => await folder.DeleteAsync());
         }
+
+        [TestMethod]
+        public async Task RenameFolder()
+        {
+            //	Arrange
+            IFolder rootFolder = TestFileSystem.LocalStorage;
+            string originalFolderName = "folderToRename";
+            IFolder folder = await rootFolder.CreateFolderAsync(originalFolderName, CreationCollisionOption.FailIfExists);
+
+            //	Act
+            string renamedFolder = "renamedFolder";
+            await folder.RenameAsync(renamedFolder);
+
+            //	Assert
+            Assert.AreEqual(renamedFolder, folder.Name);
+            Assert.AreEqual(PortablePath.Combine(TestFileSystem.LocalStorage.Path, folder.Name), folder.Path);
+            var files = await rootFolder.GetFoldersAsync();
+            Assert.IsFalse(files.Any(f => f.Name == originalFolderName));
+            Assert.IsTrue(files.Any(f => f.Name == renamedFolder));
+
+            // Cleanup
+            await folder.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task OpenFileForRead()
+        {
+            //  Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string fileName = "fileToOpenForRead.txt";
+            IFile file = await folder.CreateFileAsync(fileName, CreationCollisionOption.FailIfExists);
+
+            //  Act
+            using (Stream stream = await folder.OpenFileAsync(fileName, FileAccess.Read))
+            {
+
+                //  Assert
+                Assert.IsFalse(stream.CanWrite);
+                Assert.IsTrue(stream.CanRead);
+                Assert.IsTrue(stream.CanSeek);
+            }
+
+            //  Cleanup
+            await file.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task OpenFileForReadAndWrite()
+        {
+            //  Arrange
+            IFolder folder = TestFileSystem.LocalStorage;
+            string fileName = "fileToOpenForReadAndWrite";
+            IFile file = await folder.CreateFileAsync(fileName, CreationCollisionOption.FailIfExists);
+
+            //  Act
+            using (Stream stream = await folder.OpenFileAsync(fileName, FileAccess.ReadAndWrite))
+            {
+
+                //  Assert
+                Assert.IsTrue(stream.CanWrite);
+                Assert.IsTrue(stream.CanRead);
+                Assert.IsTrue(stream.CanSeek);
+            }
+
+            //  Cleanup
+            await file.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task GetItems()
+        {
+            //  Arrange
+            IFolder rootFolder = TestFileSystem.LocalStorage;
+            string folderName = "FolderToCreate";
+            string fileName = "FileToCreate";
+            string fileName2 = "FileToCreate2";
+
+            //  Act
+            IFolder folder = await rootFolder.CreateFolderAsync(folderName, CreationCollisionOption.FailIfExists);
+            IFile file = await rootFolder.CreateFileAsync(fileName, CreationCollisionOption.FailIfExists);
+            IFile file2 = await rootFolder.CreateFileAsync(fileName2, CreationCollisionOption.FailIfExists);
+
+            //  Assert
+            IList<IFileSystemItem> items = await rootFolder.GetItemsAsync();
+            var b = items[0].Equals(folder);
+            Assert.IsTrue(items.Any(item => item.Equals(folder)));
+            Assert.IsTrue(items.Any(item => item.Equals(file)));
+            Assert.IsTrue(items.Any(item => item.Equals(file2)));
+
+            //  Cleanup
+            await folder.DeleteAsync();
+            await file.DeleteAsync();
+            await file2.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task GetParent()
+        {
+            //  Arrange
+            IFolder rootFolder = TestFileSystem.LocalStorage;
+            string containerFolderName = "ContainerFolder";
+            string fileName = "FileToCreate";
+            string folderName = "FolderToCreate";
+
+            //  Act
+            IFolder container = await rootFolder.CreateFolderAsync(containerFolderName, CreationCollisionOption.FailIfExists);
+            IFile file = await container.CreateFileAsync(fileName, CreationCollisionOption.FailIfExists);
+            IFolder folder = await container.CreateFolderAsync(folderName, CreationCollisionOption.FailIfExists);
+
+            IFolder cont = await folder.GetParentAsync();
+            Assert.IsTrue(cont.Equals(container));
+
+            cont = await file.GetParentAsync();
+            Assert.IsTrue(cont.Equals(container));
+
+            //  Cleanup
+            await container.DeleteAsync();
+        }
     }
 }

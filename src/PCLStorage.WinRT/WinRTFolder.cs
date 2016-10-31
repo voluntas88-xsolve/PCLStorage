@@ -20,6 +20,11 @@ namespace PCLStorage
         private readonly IStorageFolder _wrappedFolder;
         private readonly bool _isRootFolder;
 
+        public bool Equals(IFileSystemItem other)
+        {
+            return this.Path == other.Path;
+        }
+
         /// <summary>
         /// Creates a new <see cref="WinRTFolder"/>
         /// </summary>
@@ -290,6 +295,53 @@ namespace PCLStorage
                 //  Folder does not exist
                 throw new Exceptions.DirectoryNotFoundException(ex.Message, ex);
             }
+        }
+
+        /// <summary>
+        /// Renames a folder without changing its location.
+        /// </summary>
+        /// <param name="newName">The new name of the folder.</param>
+        /// <param name="collisionOption">How to deal with collisions with existing folder.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// A task which will complete after the folder is renamed.
+        /// </returns>
+        public async Task RenameAsync(string newName, NameCollisionOption collisionOption = NameCollisionOption.FailIfExists, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await EnsureExistsAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_isRootFolder)
+            {
+                throw new IOException("Cannot rename root storage folder.");
+            }
+
+            await _wrappedFolder.RenameAsync(newName, (Windows.Storage.NameCollisionOption)collisionOption).AsTask(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Opens the file
+        /// </summary>
+        /// <param name="FilePath">Specifies file path.</param>
+        /// <param name="fileAccess">Specifies whether the file should be opened in read-only or read/write mode</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A <see cref="Stream"/> which can be used to read from or write to the file</returns>
+        public async Task<Stream> OpenFileAsync(string FilePath, FileAccess fileAccess, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var file = await GetFileAsync(FilePath, cancellationToken);
+            return await file.OpenAsync(fileAccess);
+        }
+
+        public async Task<IList<IFileSystemItem>> GetItemsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            List<IFileSystemItem> items = new List<IFileSystemItem>();
+            items.AddRange(await GetFoldersAsync(cancellationToken));
+            items.AddRange(await GetFilesAsync(cancellationToken));
+            return items;
+        }
+
+        public Task<IFolder> GetParentAsync()
+        {
+            return FileSystem.Current.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(Path));
         }
     }
 }

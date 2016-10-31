@@ -26,17 +26,8 @@ namespace PCLStorage
     /// <summary>
     /// Represents a file
     /// </summary>
-    public interface IFile
+    public interface IFile: IFileSystemItem
     {
-       /// <summary>
-       /// The name of the file
-       /// </summary>
-        string Name { get; }
-        /// <summary>
-        /// The "full path" of the file, which should uniquely identify it within a given <see cref="IFileSystem"/>
-        /// </summary>
-        string Path { get; }
-
         /// <summary>
         /// Opens the file
         /// </summary>
@@ -46,42 +37,31 @@ namespace PCLStorage
         Task<Stream> OpenAsync(FileAccess fileAccess, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Deletes the file
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// A task which will complete after the file is deleted.
-        /// </returns>
-        Task DeleteAsync(CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Renames a file without changing its location.
-        /// </summary>
-        /// <param name="newName">The new leaf name of the file.</param>
-        /// <param name="collisionOption">How to deal with collisions with existing files.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// A task which will complete after the file is renamed.
-        /// </returns>
-        Task RenameAsync(string newName, NameCollisionOption collisionOption = NameCollisionOption.FailIfExists, CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
         /// Moves a file.
         /// </summary>
-        /// <param name="newPath">The new full path of the file.</param>
+        /// <param name="destFolderPath">The full new path of the file.</param>
+        /// <param name="desiredNewName">The desired new name of file</param>
         /// <param name="collisionOption">How to deal with collisions with existing files.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which will complete after the file is moved.</returns>
-        Task MoveAsync(string newPath, NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken));
+        Task MoveAsync(string destFolderPath, string desiredNewName = "", NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Copy a file.
         /// </summary>
-        /// <param name="newPath">The new full path of the file.</param>
+        /// <param name="destFolderPath">The full new path of the file.</param>
+        /// <param name="desiredNewName">The desired new name of file</param>
         /// <param name="collisionOption">How to deal with collisions with existing files.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which will complete after the file is moved.</returns>
-        Task CopyAsync(string newPath, NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken));
+        Task CopyAsync(string destFolderPath, string desiredNewName = "", NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken));
 
+        /// <summary>
+        /// Appends text to file.
+        /// </summary>
+        /// <param name="text">The text which should be appended</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task which will complete after the text is appended.</returns>
+        Task AppendTextAsync(string text, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

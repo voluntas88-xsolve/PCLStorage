@@ -21,7 +21,12 @@ namespace PCLStorage
         /// </summary>
         internal const int FILE_ALREADY_EXISTS = unchecked((int)0x800700B7);
 
-        private readonly IStorageFile _wrappedFile;
+        private IStorageFile _wrappedFile;
+
+        public bool Equals(IFileSystemItem other)
+        {
+            return this.Path == other.Path;
+        }
 
         /// <summary>
         /// Creates a new <see cref="WinRTFile"/>
@@ -54,7 +59,7 @@ namespace PCLStorage
         /// <param name="fileAccess">Specifies whether the file should be opened in read-only or read/write mode</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A <see cref="Stream"/> which can be used to read from or write to the file</returns>
-        public async Task<Stream> OpenAsync(FileAccess fileAccess, CancellationToken cancellationToken)
+        public async Task<Stream> OpenAsync(FileAccess fileAccess, CancellationToken cancellationToken = default(CancellationToken))
         {
             FileAccessMode fileAccessMode;
             if (fileAccess == FileAccess.Read)
@@ -115,18 +120,17 @@ namespace PCLStorage
         /// <summary>
         /// Moves a file.
         /// </summary>
-        /// <param name="newPath">The new full path of the file.</param>
+        /// <param name="destFolderPath">The full new path of the file.</param>
+        /// <param name="desiredNewName">The desired new name of file</param>
         /// <param name="collisionOption">How to deal with collisions with existing files.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// A task which will complete after the file is moved.
-        /// </returns>
-        public async Task MoveAsync(string newPath, NameCollisionOption collisionOption, CancellationToken cancellationToken)
+        /// <returns>A task which will complete after the file is moved.</returns>
+        public async Task MoveAsync(string destFolderPath, string desiredNewName = "", NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Requires.NotNullOrEmpty(newPath, "newPath");
+            Requires.NotNullOrEmpty(destFolderPath, "newPath");
 
-            var newFolder = await StorageFolder.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(newPath)).AsTask(cancellationToken).ConfigureAwait(false);
-            string newName = System.IO.Path.GetFileName(newPath);
+            var newFolder = await StorageFolder.GetFolderFromPathAsync(destFolderPath).AsTask(cancellationToken).ConfigureAwait(false);
+            string newName = desiredNewName.Length > 0 ? desiredNewName : _wrappedFile.Name;
 
             try
             {
@@ -146,20 +150,21 @@ namespace PCLStorage
         /// <summary>
         /// Copy a file.
         /// </summary>
-        /// <param name="newPath">The new full path of the file.</param>
+        /// <param name="destFolderPath">The full new path of the file.</param>
+        /// <param name="desiredNewName">The desired new name of file</param>
         /// <param name="collisionOption">How to deal with collisions with existing files.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which will complete after the file is moved.</returns>
-        public async Task CopyAsync(string newPath, NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task CopyAsync(string destFolderPath, string desiredNewName = "", NameCollisionOption collisionOption = NameCollisionOption.ReplaceExisting, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Requires.NotNullOrEmpty(newPath, "newPath");
+            Requires.NotNullOrEmpty(destFolderPath, "newPath");
 
-            var newFolder = await StorageFolder.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(newPath)).AsTask(cancellationToken).ConfigureAwait(false);
-            string newName = System.IO.Path.GetFileName(newPath);
+            var newFolder = await StorageFolder.GetFolderFromPathAsync(destFolderPath).AsTask(cancellationToken).ConfigureAwait(false);
+            string newName = desiredNewName.Length > 0 ? desiredNewName : _wrappedFile.Name;
 
             try
             {
-                await _wrappedFile.CopyAsync(newFolder, newName, (Windows.Storage.NameCollisionOption)collisionOption).AsTask(cancellationToken).ConfigureAwait(false);
+                _wrappedFile = await _wrappedFile.CopyAsync(newFolder, newName, (Windows.Storage.NameCollisionOption)collisionOption).AsTask(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -170,6 +175,22 @@ namespace PCLStorage
 
                 throw;
             }
+        }
+
+        public async Task AppendTextAsync(string text, CancellationToken cancellationToken)
+        {
+            using (var stream = await OpenAsync(FileAccess.ReadAndWrite, cancellationToken).ConfigureAwait(false))
+            {
+                var bytes = Encoding.UTF8.GetBytes(text.ToCharArray());
+                stream.Seek(0, SeekOrigin.End);
+                await stream.WriteAsync(bytes, 0, bytes.Length);
+
+            }
+        }
+
+        public Task<IFolder> GetParentAsync()
+        {
+            return FileSystem.Current.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(Path));
         }
     }
 }

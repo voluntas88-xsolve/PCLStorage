@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,9 +16,14 @@ namespace PCLStorage
     [DebuggerDisplay("Name = {_name}")]
     public class FileSystemFolder : IFolder
     {
-        readonly string _name;
-        readonly string _path;
-        readonly bool _canDelete;
+        private string _name;
+        private string _path;
+        private readonly bool _canDelete;
+
+        public bool Equals(IFileSystemItem other)
+        {
+            return this.Path == other.Path;
+        }
 
         /// <summary>
         /// Creates a new <see cref="FileSystemFolder" /> corresponding to a specified path
@@ -288,6 +294,103 @@ namespace PCLStorage
             {
                 throw new PCLStorage.Exceptions.DirectoryNotFoundException("Directory does not exist: " + Path);
             }
+        }
+
+        /// <summary>
+        /// Moves a folder.
+        /// </summary>
+        /// <param name="newPath">The new full path of the folder.</param>
+        /// <param name="collisionOption">How to deal with collisions with existing folders.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// A task which will complete after the folder is moved.
+        /// </returns>
+        private async Task MoveAsync(string newPath, NameCollisionOption collisionOption, CancellationToken cancellationToken)
+        {
+            Requires.NotNullOrEmpty(newPath, "newPath");
+
+            await AwaitExtensions.SwitchOffMainThreadAsync(cancellationToken);
+
+            string newDirectory = System.IO.Path.GetDirectoryName(newPath);
+            string newName = new DirectoryInfo(newPath).Name;
+
+
+            for (int counter = 1; ; counter++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                string candidateName = newName;
+                if (counter > 1)
+                {
+                    candidateName = String.Format(
+                        CultureInfo.InvariantCulture,
+                        "{0} ({1}){2}",
+                        newName,
+                        counter);
+                }
+
+                string candidatePath = PortablePath.Combine(newDirectory, candidateName);
+
+                if (Directory.Exists(candidatePath))
+                {
+                    switch (collisionOption)
+                    {
+                        case NameCollisionOption.FailIfExists:
+                            throw new IOException("Folder already exists.");
+                        case NameCollisionOption.GenerateUniqueName:
+                            continue; // try again with a new name.
+                        case NameCollisionOption.ReplaceExisting:
+                            File.Delete(candidatePath);
+                            break;
+                    }
+                }
+
+                Directory.Move(_path, candidatePath);
+                _path = candidatePath;
+                _name = candidateName;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Renames a folder without changing its location.
+        /// </summary>
+        /// <param name="newName">The new name of the folder.</param>
+        /// <param name="collisionOption">How to deal with collisions with existing folder.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// A task which will complete after the folder is renamed.
+        /// </returns>
+        public async Task RenameAsync(string newName, NameCollisionOption collisionOption = NameCollisionOption.FailIfExists, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Requires.NotNullOrEmpty(newName, "newName");
+
+            await MoveAsync(PortablePath.Combine(System.IO.Path.GetDirectoryName(_path), newName), collisionOption, cancellationToken);
+        }
+
+        /// <summary>
+        /// Opens the file
+        /// </summary>
+        /// <param name="FilePath">Specifies file path.</param>
+        /// <param name="fileAccess">Specifies whether the file should be opened in read-only or read/write mode</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A <see cref="Stream"/> which can be used to read from or write to the file</returns>
+        public async Task<Stream> OpenFileAsync(string FilePath, FileAccess fileAccess, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var file = await GetFileAsync(FilePath, cancellationToken);
+            return await file.OpenAsync(fileAccess);
+        }
+
+        public async Task<IList<IFileSystemItem>> GetItemsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            List<IFileSystemItem> items = new List<IFileSystemItem>();
+            items.AddRange(await GetFoldersAsync(cancellationToken));
+            items.AddRange(await GetFilesAsync(cancellationToken));
+            return items;
+        }
+
+        public Task<IFolder> GetParentAsync()
+        {
+            return FileSystem.Current.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(Path));
         }
     }
 }
