@@ -44,5 +44,11 @@ namespace PCLStorage
         /// </summary>
         /// <returns>A <see cref="IFolder"/> as folder's parent</returns>
         Task<IFolder> GetParentAsync();
+
+        /// <summary>
+		/// Gets the basic properties of the current folder.
+		/// </summary>
+		/// <returns>When this method completes successfully, it returns the basic properties of the current file as a IFileExtraProperties object.</returns>
+		Task<IBasicProperties> GetBasicPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

@@ -35,6 +35,25 @@ namespace PCLStorage
         }
 
         /// <summary>
+        /// A folder representing temporary folder which is local to the current device
+        /// </summary>
+        public IFolder TemporaryFolder
+        {
+            get
+            {
+#if ANDROID
+                var localAppData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "tmp");
+#elif IOS
+                var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                var localAppData = Path.Combine(documents, "..", "Library");
+#else
+                var localAppData = System.Windows.Forms.Application.LocalUserAppDataPath;
+#endif
+                return new FileSystemFolder(Path.GetTempPath());
+            }
+        }
+
+        /// <summary>
         /// A folder representing storage which may be synced with other devices for the same user
         /// </summary>
         public IFolder RoamingStorage

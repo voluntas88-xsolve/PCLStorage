@@ -35,6 +35,17 @@ namespace PCLStorage
         }
 
         /// <summary>
+        /// A folder representing temporary storage which is local to the current device
+        /// </summary>
+        public IFolder TemporaryFolder
+        {
+            get
+            {
+                return new WinRTFolder(_applicationData.TemporaryFolder);
+            }
+        }
+
+        /// <summary>
         /// A folder representing storage which may be synced with other devices for the same user
         /// </summary>
         public IFolder RoamingStorage
@@ -49,9 +60,19 @@ namespace PCLStorage
             }
         }
 
-        public Task<IFile> GetFileFromAppBundleAsync(string path, CancellationToken cancellationToken)
+        public async Task<IFile> GetFileFromAppBundleAsync(string path, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Requires.NotNullOrEmpty(path, "path");
+            StorageFile storageFile;
+            try
+            {
+                storageFile = await StorageFile.GetFileFromApplicationUriAsync(new Uri(path));
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+            return new WinRTFile(storageFile);
         }
 
         /// <summary>

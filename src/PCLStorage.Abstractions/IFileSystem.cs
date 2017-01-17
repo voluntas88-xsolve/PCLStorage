@@ -20,6 +20,10 @@ namespace PCLStorage
         /// A folder representing storage which may be synced with other devices for the same user
         /// </summary>
         IFolder RoamingStorage { get; }
+        /// <summary>
+        /// A folder representing temporary folder which is local to the current device
+        /// </summary>
+        IFolder TemporaryFolder { get; }
 
         /// <summary>
         /// Gets a file, given its path.  Returns null if the file does not exist.
@@ -43,6 +47,6 @@ namespace PCLStorage
         /// <param name="path">The path to a file, as returned from the <see cref="IFile.Path"/> property.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A file for the given path, or null if it does not exist.</returns>
-        Task<IFile> GetFileFromAppBundleAsync(string path, CancellationToken cancellationToken);
+        Task<IFile> GetFileFromAppBundleAsync(string path, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

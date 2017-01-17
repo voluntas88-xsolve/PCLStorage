@@ -343,5 +343,18 @@ namespace PCLStorage
         {
             return FileSystem.Current.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(Path));
         }
+
+        /// <summary>
+		/// Gets the basic properties of the current folder.
+		/// </summary>
+		/// <returns>When this method completes successfully, it returns the basic properties of the current file as a IFileExtraProperties object.</returns>
+		public async Task<IBasicProperties> GetBasicPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await AwaitExtensions.SwitchOffMainThreadAsync(cancellationToken);
+
+            var properties = await _wrappedFolder.GetBasicPropertiesAsync();
+
+            return new BasicProperties(properties.DateModified, properties.Size);
+        }
     }
 }

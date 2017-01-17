@@ -37,6 +37,17 @@ namespace PCLStorage
         }
 
         /// <summary>
+        /// A folder representing temporary folder which is local to the current device
+        /// </summary>
+        public IFolder TemporaryFolder
+        {
+            get
+            {
+                return new IsoStoreFolder(Root);
+            }
+        }
+
+        /// <summary>
         /// Returns null, as roaming storage isn't supported by the Isolated Storage APIs
         /// </summary>
         public IFolder RoamingStorage

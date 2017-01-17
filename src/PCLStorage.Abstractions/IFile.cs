@@ -63,5 +63,12 @@ namespace PCLStorage
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task which will complete after the text is appended.</returns>
         Task AppendTextAsync(string text, CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Reads the contents of the specified file and returns a buffer.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>When this method completes, it returns byte array that represents the contents of the file.</returns>
+        Task<byte[]> ReadBufferAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

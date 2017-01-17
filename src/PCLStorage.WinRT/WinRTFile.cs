@@ -192,5 +192,33 @@ namespace PCLStorage
         {
             return FileSystem.Current.GetFolderFromPathAsync(System.IO.Path.GetDirectoryName(Path));
         }
+
+        /// <summary>
+		/// Gets the basic properties of the current folder.
+		/// </summary>
+		/// <returns>When this method completes successfully, it returns the basic properties of the current file as a IFileExtraProperties object.</returns>
+		public async Task<IBasicProperties> GetBasicPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await AwaitExtensions.SwitchOffMainThreadAsync(cancellationToken);
+
+            var properties = await _wrappedFile.GetBasicPropertiesAsync();
+
+            return new BasicProperties(properties.DateModified, properties.Size);
+        }
+
+        /// <summary>
+        /// Reads the contents of the specified file and returns a buffer.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>When this method completes, it returns byte array that represents the contents of the file.</returns>
+        public async Task<byte[]> ReadBufferAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            using (Stream stream = await OpenAsync(FileAccess.ReadAndWrite, cancellationToken))
+            {
+                byte[] buffer = new byte[stream.Length];
+                stream.Write(buffer, 0, buffer.Length);
+                return buffer;
+            }
+        }
     }
 }

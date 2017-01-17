@@ -31,7 +31,7 @@ namespace PCLStorage.Test
                 //  Not all platforms (specifically Silverlight/Windows Phone) implement roaming storage
                 return;
             }
-
+            var g = TestFileSystem.GetFileFromAppBundleAsync("Assets/test.txt");
             //  Act
             string localPath = TestFileSystem.LocalStorage.Path;
             string roamingPath = TestFileSystem.RoamingStorage.Path;
