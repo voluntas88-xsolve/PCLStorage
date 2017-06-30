@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Environment = Android.OS.Environment;
 namespace PCLStorage
 {
     /// <summary>
@@ -16,6 +16,11 @@ namespace PCLStorage
     /// </summary>
     public class TargetPlatformFileSystem
     {
+
+        public static string ExternalStorageDirectoryPath()
+        {
+            return Application.Context.GetExternalFilesDir(null).Path;
+        }
         /// <summary>
         /// Gets a file from the App Bundle.  Returns null if the file does not exist.
         /// </summary>

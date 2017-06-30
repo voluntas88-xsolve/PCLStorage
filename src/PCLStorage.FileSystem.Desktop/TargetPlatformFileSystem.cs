@@ -13,6 +13,10 @@ namespace PCLStorage
     /// </summary>
     public class TargetPlatformFileSystem
     {
+        public static string ExternalStorageDirectoryPath()
+        {
+            throw new NotImplementedException();
+        }
         /// <summary>
         /// Gets a file from the App Bundle.  Returns null if the file does not exist.
         /// </summary>
